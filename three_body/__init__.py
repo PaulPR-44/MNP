@@ -5,6 +5,7 @@ Modules:
 - integrators: numerical integration methods (RK4)
 - simulate: high-level simulation orchestration
 - visualize: matplotlib plotting and animation
+- main: CLI entry point
 """
 
 __all__ = [
