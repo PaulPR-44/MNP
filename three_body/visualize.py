@@ -71,7 +71,7 @@ def animate(times: Array, R: Array, labels: Optional[Sequence[str]] = None, colo
     ax.grid(True, alpha=0.3)
     ax.set_xlabel(["x", "y", "z"][dims[0]] + " (m)")
     ax.set_ylabel(["x", "y", "z"][dims[1]] + " (m)")
-    # Time label anchored inside axes (top-left) with semi-transparent background to avoid overlap and keep blitting
+    # Time label anchored inside axes (top-left) with semi-transparent background to avoid overlap and maintain blitting compatibility
     time_text = ax.text(0.02, 0.98, "t = 0.0 s", transform=ax.transAxes,
                         ha="left", va="top",
                         bbox=dict(boxstyle="round", facecolor="white", alpha=0.6, edgecolor="none"),
