@@ -187,7 +187,7 @@ def animate(times: Array, R: Array, labels: Optional[Sequence[str]] = None, colo
         if writer == 'ffmpeg':
             ani.save(save_path, writer=FFMpegWriter(fps=max(1, int(1000/interval_ms))), dpi=dpi)
         elif writer == 'pillow':
-            ani.save(save_path, writer=PillowWriter(fps=max(1, int(1000/interval_ms))))
+            ani.save(save_path, writer=PillowWriter(fps=max(1, int(1000/interval_ms))), dpi=dpi)
         else:
             ani.save(save_path, dpi=dpi)
 
