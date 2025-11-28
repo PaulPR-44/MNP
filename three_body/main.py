@@ -125,7 +125,7 @@ def resolve_inputs(args: argparse.Namespace) -> dict:
         data["steps"] = steps
     else:
         # Still report steps corresponding to dt for info
-        data["steps"] = int(max(1, round(float(data["t_total"]) / float(data["dt"])) ))
+        data["steps"] = int(max(1, round(float(data["t_total"]) / float(data["dt"]))))
 
     # Labels
     if args.labels:
