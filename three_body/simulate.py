@@ -21,7 +21,6 @@ def make_rhs(masses: Array, softening: float = 0.0) -> Callable[[Array, float], 
     return f
 
 
-essential_keys = ["masses", "r0", "v0", "t_total", "dt"]
 
 
 def simulate(masses: Array, r0: Array, v0: Array, t_total: float, dt: float, softening: float = 0.0,
