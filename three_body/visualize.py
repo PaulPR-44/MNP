@@ -125,8 +125,10 @@ def animate(times: Array, R: Array, labels: Optional[Sequence[str]] = None, colo
         # Apply margin
         mx = autoscale_margin * (xmax - xmin)
         my = autoscale_margin * (ymax - ymin)
-        xmin -= mx; xmax += mx
-        ymin -= my; ymax += my
+        xmin -= mx
+        xmax += mx
+        ymin -= my
+        ymax += my
         # Smooth center and ranges
         cx = 0.5 * (xmin + xmax)
         cy = 0.5 * (ymin + ymax)
