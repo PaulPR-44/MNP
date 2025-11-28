@@ -2,7 +2,7 @@
 
 Ce projet vise à simuler et visualiser le problème à 3 corps (et donc techniquement à N corps) selon certains paramètres initiaux.
 
-Installation
+## Installation
 ```
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
