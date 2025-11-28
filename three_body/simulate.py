@@ -2,7 +2,7 @@ from __future__ import annotations
 import numpy as np
 from typing import Tuple, Callable
 
-from .physics import pack_state, unpack_state, deriv
+from .physics import pack_state, deriv
 from .integrators import integrate
 
 Array = np.ndarray
