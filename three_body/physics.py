@@ -12,7 +12,8 @@ def pack_state(r: np.ndarray, v: np.ndarray) -> np.ndarray:
     """
     r = np.asarray(r, dtype=float)
     v = np.asarray(v, dtype=float)
-    assert r.shape == v.shape and r.ndim == 2 and r.shape[1] == 3, "r and v must be (N,3)"
+    if not (r.shape == v.shape and r.ndim == 2 and r.shape[1] == 3):
+        raise ValueError("r and v must be (N,3)")
     return np.stack((r, v), axis=0)
 
 
