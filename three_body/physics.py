@@ -19,7 +19,8 @@ def pack_state(r: np.ndarray, v: np.ndarray) -> np.ndarray:
 
 def unpack_state(state: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """Inverse of pack_state: returns (r, v)."""
-    assert state.ndim == 3 and state.shape[0] == 2 and state.shape[2] == 3, "state must be (2,N,3)"
+    if not (state.ndim == 3 and state.shape[0] == 2 and state.shape[2] == 3):
+        raise ValueError("state must be (2,N,3)")
     return state[0], state[1]
 
 
