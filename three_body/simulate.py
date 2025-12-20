@@ -8,22 +8,23 @@ from .integrators import integrate
 Array = np.ndarray
 
 
-def make_rhs(masses: Array, softening: float = 0.0) -> Callable[[Array, float], Array]:
+def make_rhs(masses: Array, sizes: Array, softening: float = 0.0) -> Callable[[Array, float], Array]:
     """
     Create the RHS function f(state, t) for the N-body problem with given masses.
     state shape is (2,N,3).
     """
     masses = np.asarray(masses, dtype=float)
+    sizes = np.asarray(sizes, dtype=float)
 
     def f(state: Array, t: float) -> Array:
-        return deriv(state, masses, softening=softening)
+        return deriv(state, masses, sizes, softening=softening)
 
     return f
 
 
 
 
-def simulate(masses: Array, r0: Array, v0: Array, t_total: float, dt: float, softening: float = 0.0,
+def simulate(masses: Array, sizes: Array, r0: Array, v0: Array, t_total: float, dt: float, softening: float = 0.0,
              t0: float = 0.0) -> Tuple[Array, Array, Array, Array]:
     """
     Run a simulation and return times and trajectories.
@@ -45,7 +46,7 @@ def simulate(masses: Array, r0: Array, v0: Array, t_total: float, dt: float, sof
         raise ValueError("masses must be length N")
 
     state0 = pack_state(r0, v0)
-    f = make_rhs(masses, softening=softening)
+    f = make_rhs(masses, sizes, softening=softening)
     times, Y = integrate(state0, t0, t0 + t_total, dt, f)
     R = Y[:, 0]
     V = Y[:, 1]

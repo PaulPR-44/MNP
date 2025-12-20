@@ -47,16 +47,42 @@ def accelerations(r: np.ndarray, m: np.ndarray, softening: float = 0.0) -> np.nd
     return a
 
 
-def deriv(state: np.ndarray, m: np.ndarray, softening: float = 0.0) -> np.ndarray:
+def deriv(state: np.ndarray, m: np.ndarray, s: np.ndarray, softening: float = 0.0) -> np.ndarray:
     """
     Time derivative of state for N-body under gravity.
     state: (2,N,3) with [0]=r, [1]=v
     returns dstate/dt: (2,N,3) with [0]=v, [1]=a
     """
     r, v = unpack_state(state)
-    m_col, r_col, v_col = collide(m, r, v)
+    m_col, r_col, v_col = collide_with_size(m, s, r, v)
     a = accelerations(r_col, m_col, softening=softening)
     return np.stack((v_col, a), axis=0)
+
+
+def collide_with_size(m: np.ndarray, s: np.ndarray, r:np.ndarray, v: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    to_remove = set()
+    new_r = np.zeros_like(r)
+    new_v = np.zeros_like(v)
+    new_m = m
+    N = r.shape[0]
+    for i in range(N):
+        new_r[i] = r[i]
+        new_v[i] = v[i]
+        for j in range(i+1, N):
+            dist = np.linalg.norm(r[i] - r[j])
+            if dist <=  (s[i] + s[j]):
+                col = inelastic_collision(m[i],m[j],v[i],v[j])
+                v[i] = col
+                to_remove.add(j)
+                m[i] = m[i] + m[j]
+
+    if not to_remove:
+        return m, r, v
+
+    new_r = np.delete(r, list(to_remove), axis=0)
+    new_v = np.delete(v, list(to_remove), axis=0)
+
+    return new_m, new_r, new_v
 
 def collide(m: np.ndarray, r:np.ndarray, v: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
