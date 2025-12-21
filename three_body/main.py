@@ -190,7 +190,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     autoscale_margin = float(cfg.get("autoscale_margin", 0.05))
     autoscale_smooth = float(cfg.get("autoscale_smooth", 0.2))
 
-    times, R, V, _ = simulate(masses, sizes, r0, v0, t_total, dt, softening=softening)
+    times, R, V, _, M_hist, S_hist = simulate(masses, sizes, r0, v0, t_total, dt, softening=softening)
 
     animate(times, R, labels=labels, dims=dims, interval_ms=interval_ms, trail=trail,
             save_path=save_path, dpi=dpi, writer=writer, show=show,
@@ -199,7 +199,8 @@ def main(argv: Sequence[str] | None = None) -> None:
             autoscale_window=autoscale_window,
             autoscale_quantile=autoscale_quantile,
             autoscale_margin=autoscale_margin,
-            autoscale_smooth=autoscale_smooth)
+            autoscale_smooth=autoscale_smooth,
+            sizes=S_hist)
 
 
 if __name__ == "__main__":

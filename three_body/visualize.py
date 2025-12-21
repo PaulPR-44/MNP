@@ -11,8 +11,10 @@ DEFAULT_COLORS = ["tab:orange", "tab:blue", "tab:green", "tab:red", "tab:purple"
 
 def _auto_limits(R: Array, margin: float = 0.05):
     # R: (T,N,3)
-    mins = R.min(axis=(0, 1))
-    maxs = R.max(axis=(0, 1))
+    mins = np.nanmin(R, axis=(0, 1))
+    maxs = np.nanmax(R, axis=(0, 1))
+    if np.any(np.isnan(mins)) or np.any(np.isnan(maxs)):
+        return (-1, 1), (-1, 1)
     cx = 0.5 * (mins[0] + maxs[0])
     cy = 0.5 * (mins[1] + maxs[1])
     rng = max(maxs[0] - mins[0], maxs[1] - mins[1])
@@ -32,7 +34,8 @@ def animate(times: Array, R: Array, labels: Optional[Sequence[str]] = None, colo
             autoscale_window: Optional[int] = 50,
             autoscale_quantile: float = 0.98,
             autoscale_margin: float = 0.05,
-            autoscale_smooth: float = 0.2):
+            autoscale_smooth: float = 0.2,
+            sizes: Optional[Array] = None):
     """
     Create an animation of trajectories.
     - times: (T,)
@@ -51,6 +54,7 @@ def animate(times: Array, R: Array, labels: Optional[Sequence[str]] = None, colo
     - autoscale_quantile: high quantile for cluster bounds (e.g., 0.98 keeps inner 98%)
     - autoscale_margin: extra margin fraction around data
     - autoscale_smooth: EMA smoothing factor for center/range (0..1); higher = faster updates
+    - sizes: (N,) or (T,N) array of sizes for scatter points
     """
     T, N, _ = R.shape
     labels, colors = _prepare_labels_and_colors(N, labels, colors)
@@ -67,7 +71,7 @@ def animate(times: Array, R: Array, labels: Optional[Sequence[str]] = None, colo
 
     init_func = _create_init_function(N, scatters, trails, time_text)
     update_func = _create_update_function(
-        times, x, y, N, trail, time_text, scatters, trails, limit_computer, ax
+        times, x, y, N, trail, time_text, scatters, trails, limit_computer, ax, sizes=sizes
     )
 
     blit_flag = not autoscale
@@ -157,6 +161,9 @@ def _create_limit_computer(x: Array, y: Array, autoscale: bool, autoscale_state:
         w0 = 0 if autoscale_window is None else max(0, f - int(autoscale_window) + 1)
         xs = x[w0:f + 1, :].reshape(-1)
         ys = y[w0:f + 1, :].reshape(-1)
+        
+        xs = xs[~np.isnan(xs)]
+        ys = ys[~np.isnan(ys)]
 
         if xs.size == 0:
             return None
@@ -238,7 +245,8 @@ def _create_init_function(N: int, scatters: list, trails: list, time_text):
 
 
 def _create_update_function(times: Array, x: Array, y: Array, N: int, trail: Optional[int],
-                            time_text, scatters: list, trails: list, limit_computer, ax):
+                            time_text, scatters: list, trails: list, limit_computer, ax,
+                            sizes: Optional[Array] = None):
     """Create the animation update function."""
 
     def update(frame):
@@ -251,8 +259,25 @@ def _create_update_function(times: Array, x: Array, y: Array, N: int, trail: Opt
         for i in range(N):
             xi = x[t0:frame + 1, i]
             yi = y[t0:frame + 1, i]
-            trails[i].set_data(xi, yi)
-            scatters[i].set_offsets([x[frame, i], y[frame, i]])
+            
+            mask = ~np.isnan(xi) & ~np.isnan(yi)
+            trails[i].set_data(xi[mask], yi[mask])
+            
+            if np.isnan(x[frame, i]) or np.isnan(y[frame, i]):
+                scatters[i].set_offsets(np.c_[[], []])
+            else:
+                scatters[i].set_offsets([x[frame, i], y[frame, i]])
+                if sizes is not None:
+                    if sizes.ndim == 1:
+                        s_val = 30 * (sizes[i] / np.mean(sizes))**2
+                        scatters[i].set_sizes([s_val])
+                    elif sizes.ndim == 2:
+                        initial_mean_size = np.mean(sizes[0])
+                        if initial_mean_size > 0:
+                            s_val = 30 * (sizes[frame, i] / initial_mean_size)**2
+                        else:
+                            s_val = 30
+                        scatters[i].set_sizes([s_val])
 
         lims = limit_computer(frame)
         if lims is not None:
