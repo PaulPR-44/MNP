@@ -39,7 +39,8 @@ def simulate(masses: Array, r0: Array, v0: Array, t_total: float, dt: float, sof
     r0 = np.asarray(r0, dtype=float)
     v0 = np.asarray(v0, dtype=float)
     masses = np.asarray(masses, dtype=float)
-    assert r0.shape == v0.shape and r0.ndim == 2 and r0.shape[1] == 3, "r0 and v0 must be (N,3)"
+    if not (r0.shape == v0.shape and r0.ndim == 2 and r0.shape[1] == 3):
+        raise ValueError("r0 and v0 must be (N,3)")
     if masses.shape[0] != r0.shape[0]:
         raise ValueError("masses must be length N")
 
