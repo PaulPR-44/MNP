@@ -1,0 +1,27 @@
+{
+  "masses": [
+    1e24,
+    1e24
+  ],
+  "size": [
+    1e6,
+    1e6
+  ],
+  "r0": [
+    [-1e8, 0.0, 0.0],
+    [1e8, 0.0, 0.0]
+  ],
+  "v0": [
+    [1000.0, 0.0, 0.0],
+    [-800.0, 0.0, 0.0]
+  ],
+  "t_total": 200000.0,
+  "dt": 100.0,
+  "softening": 0.0,
+  "labels": ["Body A", "Body B"],
+  "dims": [0, 1],
+  "interval_ms": 30,
+  "trail": 100,
+  "no_show": false,
+  "autoscale_mode": "all"
+}
