@@ -25,8 +25,10 @@ def integrate(y0: Array, t0: float, tf: float, dt: float, f: Callable[[Array, fl
     Integrate ODE using fixed-step RK4.
     Returns times array shape (T,) and states array shape (T, *y0.shape)
     """
-    if dt <= 0 or tf <= t0:
-        raise ValueError("tf must be > t0 and dt > 0")
+    if dt <= 0:
+        raise ValueError("dt > 0")
+    if tf <= t0:
+        raise ValueError("tf must be > t0")
     n_steps = int(np.ceil((tf - t0) / dt))
     times = t0 + np.arange(n_steps + 1) * dt
     times[-1] = tf  # ensure exact final time
