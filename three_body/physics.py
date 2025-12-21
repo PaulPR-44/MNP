@@ -36,21 +36,14 @@ def accelerations(r: np.ndarray, m: np.ndarray, softening: float = 0.0) -> np.nd
     N = r.shape[0]
     a = np.zeros_like(r)
     for i in range(N):
-        if m[i] <= 0 or np.any(np.isnan(r[i])):
-            continue
+        # vector from i to others
         dr = r - r[i]
         dist2 = np.sum(dr**2, axis=1) + softening**2
+        # avoid self-force
         dist2[i] = np.inf
-        mask = (m > 0) & (~np.any(np.isnan(r), axis=1))
-        inv_r3 = np.zeros(N)
-        safe_mask = mask.copy()
-        safe_mask[i] = False
-        safe_mask &= (dist2 > 0)
-        
-        inv_r3[safe_mask] = (dist2[safe_mask] ** -1.5)
-        
-        terms = (m[:, None] * dr) * inv_r3[:, None]
-        a[i] = G * np.sum(terms[safe_mask], axis=0)
+        inv_r3 = (dist2 ** -1.5)
+        # Newton's law: a_i = G * sum_{j!=i} m_j * (r_j - r_i) / |r_j - r_i|^3
+        a[i] = G * np.sum((m[:, None] * dr) * inv_r3[:, None], axis=0)
     return a
 
 
@@ -61,85 +54,55 @@ def deriv(state: np.ndarray, m: np.ndarray, softening: float = 0.0) -> np.ndarra
     returns dstate/dt: (2,N,3) with [0]=v, [1]=a
     """
     r, v = unpack_state(state)
-    a = accelerations(r, m, softening=softening)
-    return np.stack((v, a), axis=0)
-
-
-def handle_collisions(m: np.ndarray, s: np.ndarray, r: np.ndarray, v: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, bool]:
-    """
-    Check for and resolve collisions.
-    Returns (updated_m, updated_s, updated_r, updated_v, collision_occurred)
-    Collided bodies are merged: one is updated, others are "deactivated" (mass=0, size=0).
-    """
-    N = r.shape[0]
-    collision_occurred = False
-    new_m = m.copy()
-    new_s = s.copy()
-    new_r = r.copy()
-    new_v = v.copy()
-
-    deactivated = np.where(new_m <= 0)[0].tolist()
-
-    for i in range(N):
-        if i in deactivated:
-            continue
-        for j in range(i + 1, N):
-            if j in deactivated:
-                continue
-            
-            dist = np.linalg.norm(new_r[i] - new_r[j])
-            if dist <= (new_s[i] + new_s[j]):
-                m1, m2 = new_m[i], new_m[j]
-                v1, v2 = new_v[i], new_v[j]
-                r1, r2 = new_r[i], new_r[j]
-                
-                total_m = m1 + m2
-                new_v[i] = (m1 * v1 + m2 * v2) / total_m
-                new_r[i] = (m1 * r1 + m2 * r2) / total_m
-                new_m[i] = total_m
-                new_s[i] = (new_s[i]**3 + new_s[j]**3)**(1/3)
-                
-                new_m[j] = 0.0
-                new_s[j] = 0.0
-                new_r[j] = np.nan
-                new_v[j] = 0.0
-                
-                deactivated.append(j)
-                collision_occurred = True
-                
-    return new_m, new_s, new_r, new_v, collision_occurred
+    m_col, r_col, v_col = collide(m, r, v)
+    a = accelerations(r_col, m_col, softening=softening)
+    return np.stack((v_col, a), axis=0)
 
 def collide(m: np.ndarray, r:np.ndarray, v: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Handle collisions in the state Y.
     Returns new positions and velocities after collisions.
     """
+    #print(f"Checking for collisions in {r.shape[0]} positions")
     uniques, uniques_idx, unique_counts = np.unique(r, axis=0, return_inverse=True, return_counts=True)
+   # print(f"Found {len(uniques)} unique positions, with counts: {unique_counts}")
     collision_mask = uniques[unique_counts > 1]
     if collision_mask.size == 0:
+        #print("No collisions detected.")
         return m, r, v
 
     collision_idx = np.where(np.isin(uniques_idx, np.where(unique_counts > 1)[0]))[0]
     pos_mask = np.isin(np.arange(r.shape[0]), collision_idx)
 
     dup_indices = np.nonzero(pos_mask)[0]
+    print(f"Duplicate indices found: {dup_indices}")
+    #print(f"Representing positions: {r[dup_indices]}")
 
     if len(dup_indices) < 2:
+        print("Only one duplicate found, no collision to resolve.")
         return  m, r, v
     
+    #print(f"Colliding bodies at indices {dup_indices} with new velocity {new_velocity}")
+
     new_velocity = inelastic_collision(
         m[dup_indices[0]],
         m[dup_indices[1]],
         v[dup_indices[0]],
         v[dup_indices[1]]
     )
+   # print(f"Colliding bodies at indices {dup_indices} with new velocity {new_velocity:.3f}")
+    # Update the velocity of the first duplicate
     v[dup_indices[0]] = new_velocity
-    r[dup_indices[0]] = r[dup_indices[1]]  
+    r[dup_indices[0]] = r[dup_indices[1]]  # Move the first duplicate to the position of the second
+    # Remove the second duplicate
     r = np.delete(r, dup_indices[1], axis=0)
     v = np.delete(v, dup_indices[1], axis=0)
 
-    m[dup_indices[0]] = m[dup_indices[0]] + m[dup_indices[1]]  
-    m = np.delete(m, dup_indices[1])  
+    m[dup_indices[0]] = m[dup_indices[0]] + m[dup_indices[1]]  # Combine the masses
+    m = np.delete(m, dup_indices[1])  # Remove the mass of the second duplicate
+
+    print(r)
+
 
     return  m, r, v
 
