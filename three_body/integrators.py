@@ -20,10 +20,14 @@ def rk4_step(y: Array, t: float, dt: float, f: Callable[[Array, float], Array]) 
     return y + (dt / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
 
 
-def integrate(y0: Array, t0: float, tf: float, dt: float, f: Callable[[Array, float], Array]) -> tuple[Array, Array]:
+def integrate(y0: Array, t0: float, tf: float, dt: float, f: Callable[[Array, float], Array],
+              collision_handler: Callable[[Array, float], tuple[Array, bool]] | None = None,
+              step_callback: Callable[[Array, float, int], None] | None = None) -> tuple[Array, Array]:
     """
     Integrate ODE using fixed-step RK4.
     Returns times array shape (T,) and states array shape (T, *y0.shape)
+    Optional collision_handler(y, t) -> (new_y, occurred)
+    Optional step_callback(y, t, step_idx)
     """
     if dt <= 0:
         raise ValueError("dt > 0")
@@ -38,10 +42,19 @@ def integrate(y0: Array, t0: float, tf: float, dt: float, f: Callable[[Array, fl
     Y[0] = y
     t = t0
 
+    if step_callback is not None:
+        step_callback(y, t, 0)
+
     for i in range(1, len(times)):
         this_dt = times[i] - t
         y = rk4_step(y, t, this_dt, f)
         t = times[i]
+        
+        if collision_handler is not None:
+            y, _ = collision_handler(y, t)
+            
         Y[i] = y
+        if step_callback is not None:
+            step_callback(y, t, i)
 
     return times, Y

@@ -111,7 +111,7 @@ def resolve_inputs(args: argparse.Namespace) -> dict:
         data["softening"] = float(args.softening)
 
     # Basic validation (dt may be computed later)
-    required = ["masses", "r0", "v0", "t_total"]
+    required = ["masses", "size", "r0", "v0", "t_total"]
     missing = [k for k in required if k not in data]
     if missing:
         raise SystemExit(f"Missing required parameters: {', '.join(missing)}. Provide --config or CLI args.")
@@ -166,6 +166,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     cfg = resolve_inputs(args)
 
     masses = np.asarray(cfg["masses"], dtype=float)
+    sizes = np.asarray(cfg["size"], dtype=float)
     r0 = np.asarray(cfg["r0"], dtype=float)
     v0 = np.asarray(cfg["v0"], dtype=float)
     t_total = float(cfg["t_total"])
@@ -189,7 +190,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     autoscale_margin = float(cfg.get("autoscale_margin", 0.05))
     autoscale_smooth = float(cfg.get("autoscale_smooth", 0.2))
 
-    times, R, V, _ = simulate(masses, r0, v0, t_total, dt, softening=softening)
+    times, R, V, _, M_hist, S_hist = simulate(masses, sizes, r0, v0, t_total, dt, softening=softening)
 
     animate(times, R, labels=labels, dims=dims, interval_ms=interval_ms, trail=trail,
             save_path=save_path, dpi=dpi, writer=writer, show=show,
@@ -198,7 +199,8 @@ def main(argv: Sequence[str] | None = None) -> None:
             autoscale_window=autoscale_window,
             autoscale_quantile=autoscale_quantile,
             autoscale_margin=autoscale_margin,
-            autoscale_smooth=autoscale_smooth)
+            autoscale_smooth=autoscale_smooth,
+            sizes=S_hist)
 
 
 if __name__ == "__main__":
